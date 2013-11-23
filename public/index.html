@@ -1,0 +1,57 @@
+<html>
+<head>
+    <title id="piTitle">Pi Web Interface</title>
+    <!--<script src="//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>-->
+    <script src="prototype.js"></script>
+
+    <script>
+    function jsUpdateTime()
+    {
+        new Ajax.Request('cgi-bin/server.fcgi?item=time', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    document.getElementById("piTime").innerHTML
+                           = response.responseText;
+                }
+            }
+        });
+        new Ajax.Request('cgi-bin/server.fcgi?item=uptime', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    document.getElementById("piUptime").innerHTML
+                           = 'Uptime: ' + response.responseText;
+                }
+            }
+        });
+    }
+    function jsUpdateServerInfo()
+    {
+        new Ajax.Request('cgi-bin/server.fcgi?item=hostname', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    document.getElementById("piTitle").innerHTML
+                           = response.responseText + 'Web Interface';
+                    document.getElementById("piHello").innerHTML
+                           = 'Hello World @ ' + response.responseText
+                }
+            }
+        });
+        jsUpdateTime();
+    }
+    setInterval(jsUpdateTime, 1000);
+    </script>
+</head>
+
+<body onload="jsUpdateServerInfo()">
+    <h2 id="piHello"></h2>
+    <p id="piTime"></p>
+    <p id="piUptime"></p>
+    <button type="button" onclick="window.location.href='cgi-bin/server.fcgi?item=status_page'">Server Status</button>
+</body>
+</html>
