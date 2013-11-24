@@ -1,0 +1,16 @@
+Change hostname
+http://www.cyberciti.biz/faq/debian-change-hostname-permanently/
+vi /etc/hostname
+vi /etc/hosts : update all references
+/etc/init.d/hostname.sh start
+
+Install lighttpd
+setup tutorial: http://redmine.lighttpd.net/projects/1/wiki/TutorialConfiguration
+move .conf file to /etc/lighttpd/lighttpd.conf
+
+Install libfcgi-dev
+notes: http://www.fastcgi.com/devkit/doc/fastcgi-prog-guide/ch2c.htm#3659
+
+start server
+sudo /etc/init.d/lighttpd <start/stop/restart>
+
