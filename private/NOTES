@@ -14,3 +14,6 @@ notes: http://www.fastcgi.com/devkit/doc/fastcgi-prog-guide/ch2c.htm#3659
 start server
 sudo /etc/init.d/lighttpd <start/stop/restart>
 
+Add flup for python support
+apt-get install python-flup
+
