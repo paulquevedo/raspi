@@ -17,3 +17,25 @@ sudo /etc/init.d/lighttpd <start/stop/restart>
 Add flup for python support
 apt-get install python-flup
 
+apt-get install php5-cgi
+php-cgi -v
+which php-cgi
+    -> [path]
+set "bin-path" to [path] in conf file
+/etc/init.d.lighttpd restart
+localhost/test.php:
+    <?php phpinfo(); ?>
+
+Google mail via Pear mail
+Test function: http://scriptime.blogspot.in/2012/12/how-send-email-using-gmails-smtp-server.html
+apt-get install php-pear
+pear install mail
+pear install net_smtp
+/etc/init.d.lighttpd restart
+
+SMS Gateway (WIND mobile)
+phone must send a text message to 4000 first
+message format is person@mail.com <msg> (costs an additional
+$0.10 per msg). Send a malformed msg to avoid outgoing costs.
+SMS mailbox now operational
+Pear mail a message to phonenumber@txt.windmobile.ca
