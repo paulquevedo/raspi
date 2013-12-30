@@ -3,9 +3,10 @@
     <title id="piTitle">Pi Web Interface</title>
     <!--<script src="//ajax.googleapis.com/ajax/libs/prototype/1.7.1.0/prototype.js"></script>-->
     <script src="prototype.js"></script>
+    <script src="jquery-2.0.3.min.js"></script>
 
     <script>
-    function jsUpdateTime()
+    function jsUpdateStats()
     {
         new Ajax.Request('cgi-bin/server.fcgi?item=time', {
             method : 'GET',
@@ -27,6 +28,158 @@
                 }
             }
         });
+        new Ajax.Request('cgi-bin/piServer.py?light=state', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    document.getElementById("piLightSts").innerHTML
+                             = 'Light Status: ' + response.responseText;
+                }
+            }
+        });
+    }
+    function jsLightCmd(cmd)
+    {
+        new Ajax.Request('cgi-bin/piServer.py?light=' + cmd, {
+            method : 'GET',
+        });
+    }
+    function jsClearInput(id, dfltTxt)
+    {
+        if (dfltTxt.localeCompare(document.getElementById(id).value) == 0) {
+            document.getElementById(id).value = "";
+        }
+    }
+
+    function schedItem(jsonStr)
+    {
+        if (jsonStr == undefined) {
+            this.jsonStr = '{ "day":"mon", "hh":"hh", "mm":"mm", "ss":"ss", "enable":"false" }';
+        }
+        else {
+            this.jsonStr = jsonStr;
+        }
+        this.jsonObj = eval("(" + this.jsonStr + ")");
+        this.valid = false;
+        this.id = 0;
+
+        if (this.jsonObj.enable == undefined) {
+            this.jsonObj.enable = "false";
+        }
+
+        this.isSelDay = function(day) {
+            if (day.localeCompare(this.jsonObj.day) == 0) {
+                return 'selected';
+            }
+            else {
+                return '';
+            }
+        }
+        this.toHTML = function(idx) {
+            var hh = this.jsonObj.hh;
+            var mm = this.jsonObj.mm;
+            var ss = this.jsonObj.ss;
+            var en = this.jsonObj.enable.localeCompare('on') == 0;
+
+            var html = '<select name="day">'
+                    + '<option value="mon"' + this.isSelDay('mon') + '>Monday</option>'
+                    + '<option value="tue"' + this.isSelDay('tue') + '>Tuesday</option>'
+                    + '<option value="wed"' + this.isSelDay('wed') + '>Wedsneday</option>'
+                    + '<option value="thu"' + this.isSelDay('thu') + '>Thursday</option>'
+                    + '<option value="fri"' + this.isSelDay('fri') + '>Friday</option>'
+                    + '<option value="sat"' + this.isSelDay('sat') + '>Saturday</option>'
+                    + '<option value="sun"' + this.isSelDay('sun') + '>Sunday</option>'
+                    + '</select>'
+                    + '<div style="width: 10px; display: inline-block;"></div>'
+                    + '<input type="text" name="hh" id="hh' + idx + '" maxlength="2" size="1" value="' + hh + '" onFocus="jsClearInput(this.id,\'hh\')">'
+                    + '<span>:</span>'
+                    + '<input type="text" name="mm" id="mm' + idx + '" maxlength="2" size="1" value="' + mm + '" onFocus="jsClearInput(this.id,\'mm\')">'
+                    + '<span>:</span>'
+                    + '<input type="text" name="ss" id="ss' + idx + '" maxlength="2" size="1" value="' + ss + '" onFocus="jsClearInput(this.id,\'ss\')">'
+                    + '<div style="width: 10px; display: inline-block;"></div>';
+            if (en == true) {
+                html += '<input type="checkbox" checked name="enable">Enable';
+            }
+            else {
+                html += '<input type="checkbox" name="enable">Enable';
+            }
+
+            html += '<div style="width: 15px; display: inline-block;"></div>'
+            html += '<button type="button" onclick="schedRemove(' + this.id + ')">Remove</button>';
+
+            return html;
+        }
+        this.show = function(id) {
+            var jsonObj = eval ("(" + jsonStr + ")");
+            var dSch = document.getElementById('scheduler');
+            var d    = document.createElement('div');
+
+            this.id = id;
+            this.valid = true;
+
+            d.id = 'sItem' + this.id;
+            d.innerHTML = this.toHTML(this.id);
+            dSch.appendChild(d);
+        }
+        this.hide = function() {
+            var dSch = document.getElementById('scheduler');
+            var d    = document.getElementById('sItem' + this.id);
+            this.valid = false;
+            dSch.removeChild(d);
+        }
+    }
+
+    var sched = [];
+    function schedRemove(idx)
+    {
+        sched[idx].hide();
+    }
+    function schedAdd(jsonString)
+    {
+        var item = new schedItem(jsonString);
+        var idx  = sched.length;
+        sched.push(item);
+        sched[idx].show(idx);
+    }
+    function schedLoad(index)
+    {
+        new Ajax.Request('cgi-bin/piServer.py?sch=json&item=' + index, {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    schedAdd(response.responseText);
+                }
+            }
+        });
+    }
+    function schedUpdate(form) {
+        var array = jQuery(form).serializeArray();
+        var json = {};
+        var firstPass = true;
+
+        new Ajax.Request('cgi-bin/piServer.py?sch=reset', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                jQuery.each(array, function() {
+                    if (firstPass == false && this.name.localeCompare('day') == 0) {
+                        $.post('piServer.py', JSON.stringify(json))
+                         .done(function( data ) {
+                            console.log( data );
+                         });
+                        json = { };
+                    }
+                    json[this.name] = this.value || '';
+                    firstPass = false;
+                });
+                $.post('piServer.py', JSON.stringify(json))
+                 .done(function( data ) {
+                    console.log( data );
+                  });
+            }
+        });
     }
     function jsUpdateServerInfo()
     {
@@ -42,9 +195,20 @@
                 }
             }
         });
-        jsUpdateTime();
+        new Ajax.Request('cgi-bin/piServer.py?sch=numItems', {
+            method : 'GET',
+            onComplete: function(response)
+            {
+                if (response.status == 200) {
+                    for (var i=0; i < parseInt(response.responseText); i++) {
+                        schedLoad(i);
+                    }
+                }
+            }
+        });
+        jsUpdateStats();
     }
-    setInterval(jsUpdateTime, 1000);
+    setInterval(jsUpdateStats, 1000);
     </script>
 </head>
 
@@ -52,6 +216,17 @@
     <h2 id="piHello"></h2>
     <p id="piTime"></p>
     <p id="piUptime"></p>
-    <button type="button" onclick="window.location.href='cgi-bin/system.py'">Server Status</button>
+    <button type="button" onclick="window.location.href='cgi-bin/piServer.py?stats=0'">Server Status</button>
+    <br><br>
+    <button type="button" onclick="jsLightCmd('on')">Enable Light</button>
+    <button type="button" onclick="jsLightCmd('off')">Disable Light</button>
+    <br>
+    <p id="piLightSts"></p>
+    <form name="schForm" method="get" action="piServer.py">
+    <div id="scheduler"> </div>
+    <button type="button" onclick="schedAdd()">Add</button>
+    <br><br>
+    <button type="button" onclick="schedUpdate(this.form)">Apply</button>
+    </form>
 </body>
 </html>
